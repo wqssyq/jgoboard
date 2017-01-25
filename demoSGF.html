@@ -4,7 +4,11 @@
   <meta charset="utf-8">
   <title>jGoBoard SGF Player Demo</title>
   <link rel="stylesheet" href="demoSGF.css" type="text/css">
+<!--
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+-->
+  <script src="jquery-2.1.1.min.js"></script>
+  
   <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
 </head>
 <body>
@@ -185,13 +189,13 @@ function loadURL(url) {
 
 function loadFile() {
   var files = document.getElementById("file").files;
-	
-	if(!files || files.length == 0)
-		alert("File loading either not supported or no file selected!");
-		
-	var reader = new FileReader();
-	reader.onload = function() { loadSGF(reader.result); };
-	reader.readAsText(files[0], "UTF-8");
+  
+  if(!files || files.length == 0)
+    alert("File loading either not supported or no file selected!");
+    
+  var reader = new FileReader();
+  reader.onload = function() { loadSGF(reader.result); };
+  reader.readAsText(files[0], "UTF-8");
 }
 </script>
 

@@ -3,7 +3,10 @@
 <head>
   <meta charset="utf-8">
   <title>Board</title>
+<!--
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+-->
+  <script src="jquery-2.1.1.min.js"></script>
 </head>
 <body>
 
@@ -142,7 +145,8 @@ $.ajax('vars.sgf', { // fetch demo.sgf
   complete: function(resp) {
     var jsetup;
 
-    jrecord = JGO.util.loadSGF(resp.responseText);
+    //jrecord = JGO.util.loadSGF(resp.responseText);
+    jrecord = JGO.sgf.load(resp.responseText, true);
     move(0); // sets comment
 
     if(!(jrecord instanceof JGO.Record)) {

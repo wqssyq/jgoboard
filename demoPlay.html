@@ -7,23 +7,57 @@
   body { text-align: center; }
   div { margin: 20px auto; color: #888; }
   </style>
+  <link rel="stylesheet" href="demoSGF.css" type="text/css">
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <script src="jquery-2.1.1.min.js"></script>
 </head>
 <body>
 
 <div id="board"></div>
+    <p class="controls" style="width: 500px;">
+    <a href="#" onclick="move(0); return false;"><i class="fa fa-fast-backward"></i></a>
+    <a href="#" onclick="move(-10); return false;"><i class="fa fa-backward"></i></a>
+    <a href="#" onclick="move(-1); return false;"><i class="fa fa-step-backward"></i></a>
+    <strong id="move">1</strong> / <strong id="moves">1</strong>
+    <a href="#" onclick="move(1); return false;"><i class="fa fa-step-forward"></i></a>
+    <a href="#" onclick="move(10); return false;"><i class="fa fa-forward"></i></a>
+    <a href="#" onclick="move(1000); return false;"><i class="fa fa-fast-forward"></i></a>
+    Variation: <strong id="variation">1</strong> / <strong id="variations">1</strong>
+    <a href="#" onclick="nextVariation(); return false;"><i title="variation" class="fa fa-arrows-v"></i></a>
+    </p>
+
+<div>
+    <div id="black-captures">0</div>
+    <div id="white-captures">0</div>
+</div>
 <div><p>Click on board to play. See page source for implementation, and
   <a href="http://jgoboard.com">http://jgoboard.com</a> for details.</p></div>
 
 <script type="text/javascript" src="dist/jgoboard-latest.js"></script>
+<!--
 <script type="text/javascript" src="large/board.js"></script>
+<script type="text/javascript" src="medium/board.js"></script>
+-->
+<script type="text/javascript" src="medium/board.js"></script>
 <script type="text/javascript">
-var jboard = new JGO.Board(13);
-var jsetup = new JGO.Setup(jboard, JGO.BOARD.largeWalnut);
-var player = JGO.WHITE; // next player
+var updateCaptures = function (node) {
+  document.getElementById('black-captures').innerText = node.info.captures[JGO.BLACK];
+  document.getElementById('white-captures').innerText = node.info.captures[JGO.WHITE];
+};
+var jrecord = new JGO.Record(19);
+var jboard = jrecord.jboard;
+//var jsetup = new JGO.Setup(jboard, JGO.BOARD.largeWalnut);
+var jsetup = new JGO.Setup(jboard, JGO.BOARD.mediumWalnut);
+
+//设置为黑先走
+//var player = JGO.WHITE; // next player
+var player = JGO.BLACK; // next player
+
 var ko = false, lastMove = false; // ko coordinate and last move coordinate
 var lastHover = false, lastX = -1, lastY = -1; // hover helper vars
 
-jboard.setType(JGO.util.getHandicapCoordinates(jboard.width, 2), JGO.BLACK);
+//设置让子
+//jboard.setType(JGO.util.getHandicapCoordinates(jboard.width, 2), JGO.BLACK);
 
 jsetup.setOptions({stars: {points:5}});
 jsetup.create('board', function(canvas) {
@@ -49,22 +83,27 @@ jsetup.create('board', function(canvas) {
     var play = jboard.playMove(coord, player, ko);
 
     if(play.success) {
-      jboard.setType(coord, player); // play stone
-      jboard.setType(play.captures, JGO.CLEAR); // clear opponent's stones
+      node = jrecord.createNode(true);
+      node.info.captures[player] += play.captures.length; // tally captures
+      node.setType(coord, player); // play stone
+      node.setType(play.captures, JGO.CLEAR); // clear opponent's stones
 
       if(lastMove)
-        jboard.setMark(lastMove, JGO.MARK.NONE); // clear previous mark
+        node.setMark(lastMove, JGO.MARK.NONE); // clear previous mark
       if(ko)
-        jboard.setMark(ko, JGO.MARK.NONE); // clear previous ko mark
+        node.setMark(ko, JGO.MARK.NONE); // clear previous ko mark
 
-      jboard.setMark(coord, JGO.MARK.CIRCLE); // mark move
+      node.setMark(coord, JGO.MARK.CIRCLE); // mark move
       lastMove = coord;
 
       if(play.ko)
-        jboard.setMark(play.ko, JGO.MARK.CIRCLE); // mark ko, too
+        node.setMark(play.ko, JGO.MARK.CIRCLE); // mark ko, too
       ko = play.ko;
 
       player = opponent;
+      updateCaptures(node);
+      moveNum++;
+      updateInfo();
     } else alert('Illegal move: ' + play.errorMsg);
   });
 
@@ -92,6 +131,50 @@ jsetup.create('board', function(canvas) {
     lastHover = false;
   });
 });
+
+
+var moveNum = 0, moves = 0, gotoMove = 0;
+//var jrecord = false, jnotifier;
+
+function move(dir) { // dir=0 has special meaning "beginning"
+  if(!jrecord) return; // disable movement until SGF loaded
+
+  if(dir == 0) {
+    jrecord.first();
+    moveNum = 0;
+  }
+  while(dir < 0) {
+    if(!jrecord.previous()) break;
+    var opponent = (player == JGO.BLACK) ? JGO.WHITE : JGO.BLACK;
+    player = opponent;
+    moveNum--; dir++;
+  }
+  while(dir > 0) {
+    if(!jrecord.next()) break;
+    var opponent = (player == JGO.BLACK) ? JGO.WHITE : JGO.BLACK;
+    player = opponent;
+    moveNum++; dir--;
+  }
+  updateInfo();
+}
+
+function nextVariation() {
+  jrecord.setVariation((jrecord.getVariation() + 1) % jrecord.getVariations());
+  updateInfo();
+}
+
+function updateInfo() {
+  if(!jrecord) return;
+  var info = jrecord.getCurrentNode().info;
+  $('#move').html(moveNum);
+  $('#comments').html(info.comment ? info.comment.replace(/\n/g, '<br>') : '');
+  $('#black_captures').html(info.captures[JGO.BLACK]);
+  $('#white_captures').html(info.captures[JGO.WHITE]);
+  $('#variation').html(jrecord.getVariation()+1);
+  $('#variations').html(jrecord.getVariations());
+}
+
+
 </script>
 
 </body>
